@@ -4,13 +4,16 @@ from . import settings
 # 主人公のクラス
 class Player:
 
-    def __init__(self, scroll_x, scroll_y, on_ground, in_wall, fall_speed):
+    def __init__(self, scroll_x, scroll_y, on_ground, fall_speed , touch_right, touch_left, touch_head, touch_foot):
         self.scroll_x = scroll_x
         self.scroll_y = scroll_y
         self.on_ground = on_ground
-        self.in_wall = in_wall
         self.fall_speed = fall_speed
-
+        self.touch_right = touch_right
+        self.touch_left = touch_left
+        self.touch_head = touch_head
+        self.touch_foot = touch_foot
+    
 
     def draw(self, screen, screen_x, screen_y):
         """主人公を描画する関数"""

@@ -35,11 +35,13 @@ def start():
         keys = pygame.key.get_pressed()
         speed = settings.CAMERA_SPEED
         if keys[pygame.K_d]:
-            main_camera.move_x(speed)
-            main_player.move_x(speed)
+            if main_player.touch_right == False:
+                main_camera.move_x(speed)
+                main_player.move_x(speed)
         elif keys[pygame.K_a]:
-            main_camera.move_x(-speed)
-            main_player.move_x(-speed)
+            if main_player.touch_left == False:
+                main_camera.move_x(-speed)
+                main_player.move_x(-speed)
         
         if keys[pygame.K_SPACE]:
             if main_player.on_ground:
@@ -66,11 +68,43 @@ def start():
             main_player.fall()
         
         # 主人公判定更新
-        if main_player.scroll_y > settings.SCREEN_HEIGHT - 150:
+
+        main_player_right = main_player.scroll_x + settings.PLAYER_WIDTH
+        main_player_left = main_player.scroll_x
+        main_player_upper = main_player.scroll_y
+        main_player_bottom = main_player.scroll_y + settings.PLAYER_HEIGHT
+        
+        # 右接触判定 
+        main_player.touch_right = False
+        for rect in main_rects:
+            if ((main_player_right >= rect.scroll_x) and (main_player_right <= rect.scroll_x + rect.width / 5)) and ((main_player_bottom >= rect.scroll_y) and (main_player_upper <= rect.scroll_y + rect.height)):
+                main_player.touch_right = True
+                break
+
+
+        # 左接触判定
+        main_player.touch_left = False
+        for rect in main_rects:
+            if ((main_player_left <= rect.scroll_x + rect.width) and (main_player_left >= rect.scroll_x + rect.width * 4/5)) and ((main_player_bottom >= rect.scroll_y) and (main_player_upper <= rect.scroll_y + rect.height)):
+                main_player.touch_left = True
+                break
+
+
+        # 下接触判定
+        main_player.touch_foot = False
+        for rect in main_rects:
+            if ((main_player_bottom >= rect.scroll_y) and (main_player_bottom <= rect.scroll_y + rect.height / 5)) and ((main_player_right >= rect.scroll_x) and (main_player_left <= rect.scroll_x + rect.width)):
+                main_player.touch_foot = True
+                break
+
+        
+        if main_player.touch_foot:
             main_player.on_ground = True
         else:
             main_player.on_ground = False
 
+
+        
 
 
         # 画面更新
@@ -90,8 +124,11 @@ def reset_all():
         settings.PLAYER_FIRST_X,
         settings.PLAYER_FIRST_Y,
         True,
+        0,
         False,
-        0
+        False,
+        False,
+        False
     )
 
     main_rects = []
