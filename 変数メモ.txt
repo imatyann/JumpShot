@@ -1,6 +1,12 @@
+★コミットメッセージ
+create...ただ新規のファイルを作っただけ
+make...一端最低限完成させた
+
+
 ★座標
 横スクロール座標...player_scroll_x
 絶対的座標...player_screen_x
+絶対座標は直接変更せず、drawのみに用いる
 
 ★カメラ設定
 カメラの右上のscroll座標...camera_scroll_x

@@ -40,11 +40,14 @@ def start():
                 running = False
             
         keys = pygame.key.get_pressed()
-
-        if keys[pygame.key.K_d]:
-            pass
-        elif keys[pygame.key.k_a]:
-            pass
+        speed = settings.CAMERA_SPEED
+        if keys[pygame.K_d]:
+            main_camera.move_x(speed)
+            main_player.move_x(speed)
+        elif keys[pygame.K_a]:
+            main_camera.move_x(-speed)
+            main_player.move_x(-speed)
+            
 
 
 
