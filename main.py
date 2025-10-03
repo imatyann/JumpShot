@@ -21,8 +21,11 @@ def start():
     )
 
     main_player = player.Player(
-        100,
-        100
+        settings.PLAYER_FIRST_X,
+        settings.PLAYER_FIRST_Y,
+        True,
+        False,
+        0
     )
 
     # 毎秒実行する関数
@@ -47,8 +50,11 @@ def start():
         elif keys[pygame.K_a]:
             main_camera.move_x(-speed)
             main_player.move_x(-speed)
-            
-
+        
+        if keys[pygame.K_SPACE]:
+            if main_player.on_ground:
+                main_player.jump(10)
+                main_player.on_ground = False
 
 
         # 描画関数
@@ -56,16 +62,27 @@ def start():
         player_screen_x, player_screen_y = main_camera.scroll_to_screen(main_player.scroll_x, main_player.scroll_y)
         main_player.draw(screen, player_screen_x, player_screen_y)
 
+
+        #主人公落下
+        if main_player.on_ground:
+            main_player.fall_speed = 0
+        else:
+            main_player.move_y(main_player.fall_speed) 
+            main_player.fall()
+        
+        # 主人公判定更新
+        if main_player.scroll_y > settings.SCREEN_HEIGHT - 150:
+            main_player.on_ground = True
+        else:
+            main_player.on_ground = False
+
+
+
         # 画面更新
         pygame.display.flip()
         clock.tick(settings.FPS)
     
     pygame.quit()
-
-
-
-
-
 
 
 if __name__ == "__main__":

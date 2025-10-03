@@ -4,9 +4,13 @@ from . import settings
 # 主人公のクラス
 class Player:
 
-    def __init__(self, scroll_x, scroll_y):
+    def __init__(self, scroll_x, scroll_y, on_ground, in_wall, fall_speed):
         self.scroll_x = scroll_x
         self.scroll_y = scroll_y
+        self.on_ground = on_ground
+        self.in_wall = in_wall
+        self.fall_speed = fall_speed
+
 
     def draw(self, screen, screen_x, screen_y):
         """主人公を描画する関数"""
@@ -15,3 +19,19 @@ class Player:
     def move_x(self, x):
         """x方向にプレイヤーを動かす関数"""
         self.scroll_x += x
+
+    def move_y(self, y):
+        """y方向にプレイヤーを動かす関数"""
+        self.scroll_y += y
+        
+
+    def fall(self):
+        """下方向に常に加速させる関数"""
+        self.fall_speed += settings.PLAYER_G
+
+
+    def jump(self, speed):
+        """任意のスピードでジャンプする関数"""
+        self.fall_speed = -speed
+
+
