@@ -37,4 +37,10 @@ class Player:
         """任意のスピードでジャンプする関数"""
         self.fall_speed = -speed
 
+    def conflict_rect(self, scroll_x, scroll_y, width, height):
+        W = settings.PLAYER_WIDTH
+        H = settings.PLAYER_HEIGHT
+        x_overlap = (self.scroll_x + W >= scroll_x) and (self.scroll_x <= scroll_x + width)
+        y_overlap = (self.scroll_y + H >= scroll_y) and (self.scroll_y <= scroll_y + height)
+        return x_overlap and y_overlap
 

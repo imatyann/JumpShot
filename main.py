@@ -4,6 +4,8 @@ import game.settings as settings
 import game.camera as camera
 import game.player as player
 import game.rect as rect
+import game.board as board
+import game.goal as goal
 
 
 def start():
@@ -16,7 +18,7 @@ def start():
     clock = pygame.time.Clock()
 
     # 初期化関数実行
-    main_camera, main_player, main_rects = reset_all()
+    main_camera, main_player, main_rects, main_board, main_goal = reset_all()
 
     # 毎秒実行する関数
     running = True
@@ -33,21 +35,28 @@ def start():
                 running = False
             
         keys = pygame.key.get_pressed()
-        speed = settings.CAMERA_SPEED
-        if keys[pygame.K_d]:
-            if main_player.touch_right == False:
-                main_camera.move_x(speed)
-                main_player.move_x(speed)
-        elif keys[pygame.K_a]:
-            if main_player.touch_left == False:
-                main_camera.move_x(-speed)
-                main_player.move_x(-speed)
-        
-        if keys[pygame.K_SPACE]:
-            if main_player.on_ground:
-                main_player.jump(10)
-                main_player.on_ground = False
 
+        # 左右に主人公とカメラを移動
+        speed = settings.CAMERA_SPEED
+        if main_board.status == "play":    
+            if keys[pygame.K_d]:
+                if main_player.touch_right == False:
+                    main_camera.move_x(speed)
+                    main_player.move_x(speed)
+            elif keys[pygame.K_a]:
+                if main_player.touch_left == False:
+                    main_camera.move_x(-speed)
+                    main_player.move_x(-speed)
+
+            # ジャンプ
+            if keys[pygame.K_SPACE]:
+                if main_player.on_ground:
+                    main_player.jump(10)
+                    main_player.on_ground = False
+
+        # Rキーでリセット
+        if keys[pygame.K_r]:
+            main_camera, main_player, main_rects, main_board, main_goal = reset_all()
 
         # 描画関数
         # 主人公描画
@@ -59,13 +68,18 @@ def start():
             rect_screen_x, rect_screen_y = main_camera.scroll_to_screen(rect.scroll_x, rect.scroll_y)
             rect.draw(screen, rect_screen_x, rect_screen_y) 
 
+        # ゴールの描画
+        goal_screen_x, goal_screen_y = main_camera.scroll_to_screen(main_goal.scroll_x, main_goal.scroll_y)
+        main_goal.draw(screen, goal_screen_x, goal_screen_y)
+
 
         #主人公落下
-        if main_player.on_ground:
-            main_player.fall_speed = 0
-        else:
-            main_player.move_y(main_player.fall_speed) 
-            main_player.fall()
+        if main_board.status == "play":
+            if main_player.on_ground:
+                main_player.fall_speed = 0
+            else:
+                main_player.move_y(main_player.fall_speed) 
+                main_player.fall()
         
         # 主人公判定更新
 
@@ -77,33 +91,53 @@ def start():
         # 右接触判定 
         main_player.touch_right = False
         for rect in main_rects:
-            if ((main_player_right >= rect.scroll_x) and (main_player_right <= rect.scroll_x + rect.width / 5)) and ((main_player_bottom >= rect.scroll_y) and (main_player_upper <= rect.scroll_y + rect.height)):
+            if ((main_player_right >= rect.scroll_x) and (main_player_right <= rect.scroll_x + 6)) and ((main_player_bottom >= rect.scroll_y) and (main_player_upper <= rect.scroll_y + rect.height)):
                 main_player.touch_right = True
                 break
-
 
         # 左接触判定
         main_player.touch_left = False
         for rect in main_rects:
-            if ((main_player_left <= rect.scroll_x + rect.width) and (main_player_left >= rect.scroll_x + rect.width * 4/5)) and ((main_player_bottom >= rect.scroll_y) and (main_player_upper <= rect.scroll_y + rect.height)):
+            if ((main_player_left <= rect.scroll_x + rect.width) and (main_player_left >= rect.scroll_x + rect.width - 6)) and ((main_player_bottom >= rect.scroll_y) and (main_player_upper <= rect.scroll_y + rect.height)):
                 main_player.touch_left = True
                 break
-
 
         # 下接触判定
         main_player.touch_foot = False
         for rect in main_rects:
-            if ((main_player_bottom >= rect.scroll_y) and (main_player_bottom <= rect.scroll_y + rect.height / 5)) and ((main_player_right >= rect.scroll_x) and (main_player_left <= rect.scroll_x + rect.width)):
+            if ((main_player_bottom >= rect.scroll_y) and (main_player_bottom <= rect.scroll_y + 20)) and ((main_player_right >= rect.scroll_x) and (main_player_left <= rect.scroll_x + rect.width)):
                 main_player.touch_foot = True
                 break
 
-        
+        # 上接触判定
+        main_player.touch_head= False
+        for rect in main_rects:
+            if ((main_player_upper <= rect.scroll_y + rect.height) and (main_player_upper >= rect.scroll_y + rect.height - 6)) and ((main_player_right >= rect.scroll_x) and (main_player_left <= rect.scroll_x + rect.width)):
+                main_player.touch_head = True
+                break
+    
         if main_player.touch_foot:
             main_player.on_ground = True
         else:
             main_player.on_ground = False
 
+        if main_player.touch_head:
+            main_player.fall_speed = 1
 
+        # 死亡判定
+        # 落下判定
+        if main_player.scroll_y >= settings.DEADLINE:
+            main_board.status = "gameover"
+
+        # ゴール判定
+        if main_player.conflict_rect(main_goal.scroll_x, main_goal.scroll_y, main_goal.width, main_goal.height):
+            main_board.status = "goal"
+
+        if main_board.status == "gameover":
+            gameover(screen)
+
+        if main_board.status == "goal":
+            goal_function(screen)
         
 
 
@@ -141,8 +175,32 @@ def reset_all():
             settings.RECT_COLOR
         )
         main_rects.append(main_rect)
+    
+    main_board = board.Board(
+        "play"
+    )
 
-    return main_camera, main_player, main_rects
+    main_goal = goal.Goal(
+        settings.GOAL_FIRST_X,
+        settings.GOAL_FIRST_Y,
+        settings.GOAL_WIDTH,
+        settings.GOAL_HEIGHT,
+        settings.GOAL_COLOR
+    )
+
+    return main_camera, main_player, main_rects, main_board, main_goal
+
+def gameover(screen):
+    font = pygame.font.Font(None, 96)
+    surf = font.render("GAMEOVER", True, (255,0,0))
+    rect = surf.get_rect(center=(screen.get_width()//2, screen.get_height()//2))
+    screen.blit(surf, rect)
+
+def goal_function(screen):
+    font = pygame.font.Font(None, 96)
+    surf = font.render("GOAL!!", True, (255,0,0))
+    rect = surf.get_rect(center=(screen.get_width()//2, screen.get_height()//2))
+    screen.blit(surf, rect)
 
 
 if __name__ == "__main__":
