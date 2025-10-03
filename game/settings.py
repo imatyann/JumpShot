@@ -8,3 +8,8 @@ BG_COLOR = (255, 253, 208)
 
 # 時間設定
 FPS = 60
+
+# 主人公設定
+PLAYER_COLOR = (100, 100, 100)
+PLAYER_HEIGHT = 100
+PLAYER_WIDTH = 50

@@ -1,6 +1,14 @@
 import pygame
-
+# メインカメラのクラス
 class Camera:  
-    def __init__(self, camera_screen_x, camera_screen_y):
-        self.camera_screen_x = camera_screen_x
-        self.camera_screen_y = camera_screen_y
+    def __init__(self, scroll_x, scroll_y):
+        self.scroll_x = scroll_x
+        self.scroll_y = scroll_y
+
+    def scroll_to_screen(self, scroll_x, scroll_y):
+        """scroll座標を画面座標に変換して返す関数"""
+        return scroll_x - self.scroll_x, scroll_y - self.scroll_y
+    
+    def move_x(self, x):
+        """x方向にカメラを動かす関数"""
+        self.scroll_x += x
