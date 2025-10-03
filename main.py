@@ -3,6 +3,7 @@ import pygame
 import game.settings as settings
 import game.camera as camera
 import game.player as player
+import game.rect as rect
 
 
 def start():
@@ -15,18 +16,7 @@ def start():
     clock = pygame.time.Clock()
 
     # 初期化関数実行
-    main_camera = camera.Camera(
-        0,
-        0
-    )
-
-    main_player = player.Player(
-        settings.PLAYER_FIRST_X,
-        settings.PLAYER_FIRST_Y,
-        True,
-        False,
-        0
-    )
+    main_camera, main_player, main_rects = reset_all()
 
     # 毎秒実行する関数
     running = True
@@ -62,6 +52,11 @@ def start():
         player_screen_x, player_screen_y = main_camera.scroll_to_screen(main_player.scroll_x, main_player.scroll_y)
         main_player.draw(screen, player_screen_x, player_screen_y)
 
+        # 壁の描画
+        for rect in main_rects:
+            rect_screen_x, rect_screen_y = main_camera.scroll_to_screen(rect.scroll_x, rect.scroll_y)
+            rect.draw(screen, rect_screen_x, rect_screen_y) 
+
 
         #主人公落下
         if main_player.on_ground:
@@ -83,6 +78,34 @@ def start():
         clock.tick(settings.FPS)
     
     pygame.quit()
+
+def reset_all():
+    """全てリセットし初期設定に戻す関数"""
+    main_camera = camera.Camera(
+        0,
+        0
+    )
+
+    main_player = player.Player(
+        settings.PLAYER_FIRST_X,
+        settings.PLAYER_FIRST_Y,
+        True,
+        False,
+        0
+    )
+
+    main_rects = []
+    for setting in settings.RECTS:
+        main_rect = rect.Rect(
+            setting[0],
+            setting[1],
+            setting[2],
+            setting[3],
+            settings.RECT_COLOR
+        )
+        main_rects.append(main_rect)
+
+    return main_camera, main_player, main_rects
 
 
 if __name__ == "__main__":
