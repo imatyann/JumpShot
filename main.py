@@ -1,4 +1,5 @@
 import pygame
+import math
 
 import game.settings as settings
 import game.camera as camera
@@ -6,6 +7,8 @@ import game.player as player
 import game.rect as rect
 import game.board as board
 import game.goal as goal
+import game.reticle as reticle
+import game.bullet as bullet
 
 
 def start():
@@ -18,12 +21,22 @@ def start():
     clock = pygame.time.Clock()
 
     # 初期化関数実行
-    main_camera, main_player, main_rects, main_board, main_goal = reset_all()
+    main_camera, main_player, main_rects, main_board, main_goal, main_reticle, bullets= reset_all()
+
 
     # 毎秒実行する関数
     running = True
     while running:
         now = pygame.time.get_ticks()
+
+        # マウスの位置を確保
+        player_center_scroll_x = main_player.scroll_x + main_player.width / 2
+        player_center_scroll_y = main_player.scroll_y + main_player.height / 2
+        
+        mouse_scroll_x, mouse_scroll_y = main_camera.screen_to_scroll(pygame.mouse.get_pos()[0], pygame.mouse.get_pos()[1]) 
+        vx, vy = mouse_scroll_x - player_center_scroll_x, mouse_scroll_y - player_center_scroll_y
+        length = math.hypot(vx, vy)
+        dx, dy = (vx/length, vy/length) if length != 0 else (0, 0)
 
         # 盤面の描画
         screen.fill(settings.BG_COLOR)
@@ -33,6 +46,11 @@ def start():
             # ウィンドウの終了
             if event.type == pygame.QUIT:
                 running = False
+            # 左クリックで弾を発射
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    bullets.append(new_bullet(player_center_scroll_x, player_center_scroll_y, dx, dy))
+
             
         keys = pygame.key.get_pressed()
 
@@ -43,10 +61,12 @@ def start():
                 if main_player.touch_right == False:
                     main_camera.move_x(speed)
                     main_player.move_x(speed)
+
             elif keys[pygame.K_a]:
                 if main_player.touch_left == False:
                     main_camera.move_x(-speed)
                     main_player.move_x(-speed)
+                    
 
             # ジャンプ
             if keys[pygame.K_SPACE]:
@@ -56,12 +76,10 @@ def start():
 
         # Rキーでリセット
         if keys[pygame.K_r]:
-            main_camera, main_player, main_rects, main_board, main_goal = reset_all()
+            main_camera, main_player, main_rects, main_board, main_goal, main_reticle, bullets = reset_all()
 
         # 描画関数
-        # 主人公描画
-        player_screen_x, player_screen_y = main_camera.scroll_to_screen(main_player.scroll_x, main_player.scroll_y)
-        main_player.draw(screen, player_screen_x, player_screen_y)
+
 
         # 壁の描画
         for rect in main_rects:
@@ -72,6 +90,27 @@ def start():
         goal_screen_x, goal_screen_y = main_camera.scroll_to_screen(main_goal.scroll_x, main_goal.scroll_y)
         main_goal.draw(screen, goal_screen_x, goal_screen_y)
 
+        # レティクルの描画
+        reticle_end_scroll_x = player_center_scroll_x + 600*dx
+        reticle_end_scroll_y = player_center_scroll_y + 600*dy
+        
+        reticle_first_screen_x, reticle_first_screen_y = main_camera.scroll_to_screen(player_center_scroll_x, player_center_scroll_y)
+        reticle_end_screen_x, reticle_end_screen_y = main_camera.scroll_to_screen(reticle_end_scroll_x, reticle_end_scroll_y)
+
+        main_reticle.draw(screen, reticle_first_screen_x, reticle_first_screen_y, reticle_end_screen_x, reticle_end_screen_y)
+
+        # 弾を進ませて描画する
+        for main_bullet in bullets:
+            main_bullet_screen_x, main_bullet_screen_y = main_camera.scroll_to_screen(main_bullet.scroll_x, main_bullet.scroll_y)
+
+            main_bullet.draw(screen,main_bullet_screen_x,main_bullet_screen_y)
+            main_bullet.move_front(settings.BULLET_SPEED)
+
+        
+
+        # 主人公描画
+        player_screen_x, player_screen_y = main_camera.scroll_to_screen(main_player.scroll_x, main_player.scroll_y)
+        main_player.draw(screen, player_screen_x, player_screen_y)
 
         #主人公落下
         if main_board.status == "play":
@@ -82,11 +121,10 @@ def start():
                 main_player.fall()
         
         # 主人公判定更新
-
-        main_player_right = main_player.scroll_x + settings.PLAYER_WIDTH
+        main_player_right = main_player.scroll_x + main_player.width
         main_player_left = main_player.scroll_x
         main_player_upper = main_player.scroll_y
-        main_player_bottom = main_player.scroll_y + settings.PLAYER_HEIGHT
+        main_player_bottom = main_player.scroll_y + main_player.height
         
         # 右接触判定 
         main_player.touch_right = False
@@ -162,7 +200,9 @@ def reset_all():
         False,
         False,
         False,
-        False
+        False,
+        settings.PLAYER_WIDTH,
+        settings.PLAYER_HEIGHT
     )
 
     main_rects = []
@@ -188,7 +228,25 @@ def reset_all():
         settings.GOAL_COLOR
     )
 
-    return main_camera, main_player, main_rects, main_board, main_goal
+    main_reticle = reticle.Reticle(
+        settings.RETICLE_WIDTH,
+        settings.RETICLE_COLOR
+    )
+
+    bullets = []
+
+    return main_camera, main_player, main_rects, main_board, main_goal, main_reticle, bullets
+
+def new_bullet(scroll_x, scroll_y, direction_x, direction_y):
+    main_bullet = bullet.Bullet(
+        settings.BULLET_COLOR,
+        settings.BULLET_RADIUS,
+        scroll_x,
+        scroll_y,
+        direction_x,
+        direction_y
+    )
+    return main_bullet
 
 def gameover(screen):
     font = pygame.font.Font(None, 96)
