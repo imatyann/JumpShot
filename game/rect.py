@@ -13,6 +13,5 @@ class Rect:
     def draw(self, screen, screen_x, screen_y):
         pygame.draw.rect(screen, self.color, (screen_x, screen_y, self.width, self.height))
     
-
-
-    
+    def include(self, scroll_x, scroll_y):
+        return (self.scroll_x <= scroll_x) and (self.scroll_x + self.width >= scroll_x) and (self.scroll_y <= scroll_y) and (self.scroll_y + self.height >= scroll_y)

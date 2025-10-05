@@ -100,13 +100,22 @@ def start():
         main_reticle.draw(screen, reticle_first_screen_x, reticle_first_screen_y, reticle_end_screen_x, reticle_end_screen_y)
 
         # 弾を進ませて描画する
+
         for main_bullet in bullets:
             main_bullet_screen_x, main_bullet_screen_y = main_camera.scroll_to_screen(main_bullet.scroll_x, main_bullet.scroll_y)
 
             main_bullet.draw(screen,main_bullet_screen_x,main_bullet_screen_y)
             main_bullet.move_front(settings.BULLET_SPEED)
 
-        
+            print("hj")
+
+        bullets = [
+            b for b in bullets
+            if all(not rect.include(b.scroll_x, b.scroll_y) for rect in main_rects)
+            and 0 <= b.scroll_x <= main_camera.screen_to_scroll(settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT)[0]
+            and 0 <= b.scroll_y <= main_camera.screen_to_scroll(settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT)[1]
+        ]
+
 
         # 主人公描画
         player_screen_x, player_screen_y = main_camera.scroll_to_screen(main_player.scroll_x, main_player.scroll_y)

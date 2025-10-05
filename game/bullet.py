@@ -17,7 +17,7 @@ class Bullet:
         self.color,
         (screen_x, screen_y),
         self.radius)
-    d
+
     def move_front(self, speed):
         self.scroll_x += self.direction_x * speed
         self.scroll_y += self.direction_y * speed
