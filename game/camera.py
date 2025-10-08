@@ -16,3 +16,7 @@ class Camera:
     def move_x(self, x):
         """x方向にカメラを動かす関数"""
         self.scroll_x += x
+    
+    def summon(self, scroll_x, scroll_y):
+        self.scroll_x = scroll_x
+        self.scroll_y = scroll_y

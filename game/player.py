@@ -46,3 +46,6 @@ class Player:
         y_overlap = (self.scroll_y + H >= scroll_y) and (self.scroll_y <= scroll_y + height)
         return x_overlap and y_overlap
 
+    def summon(self, scroll_x, scroll_y):
+        self.scroll_x = scroll_x
+        self.scroll_y = scroll_y

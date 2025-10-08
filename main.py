@@ -9,6 +9,7 @@ import game.board as board
 import game.goal as goal
 import game.reticle as reticle
 import game.bullet as bullet
+import game.exchange as exchange
 
 
 def start():
@@ -21,7 +22,7 @@ def start():
     clock = pygame.time.Clock()
 
     # 初期化関数実行
-    main_camera, main_player, main_rects, main_board, main_goal, main_reticle, bullets= reset_all()
+    main_camera, main_player, main_rects, main_board, main_goal, main_reticle, bullets, exchange_bullet= reset_all()
 
 
     # 毎秒実行する関数
@@ -50,7 +51,9 @@ def start():
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     bullets.append(new_bullet(player_center_scroll_x, player_center_scroll_y, dx, dy))
-
+                elif event.button == 3:
+                    if exchange_bullet.is_in_screen == False:
+                        exchange_bullet.summon(player_center_scroll_x,player_center_scroll_y, dx, dy)
             
         keys = pygame.key.get_pressed()
 
@@ -76,10 +79,9 @@ def start():
 
         # Rキーでリセット
         if keys[pygame.K_r]:
-            main_camera, main_player, main_rects, main_board, main_goal, main_reticle, bullets = reset_all()
+            main_camera, main_player, main_rects, main_board, main_goal, main_reticle, bullets, exchange_bullet = reset_all()
 
         # 描画関数
-
 
         # 壁の描画
         for rect in main_rects:
@@ -100,14 +102,11 @@ def start():
         main_reticle.draw(screen, reticle_first_screen_x, reticle_first_screen_y, reticle_end_screen_x, reticle_end_screen_y)
 
         # 弾を進ませて描画する
-
         for main_bullet in bullets:
             main_bullet_screen_x, main_bullet_screen_y = main_camera.scroll_to_screen(main_bullet.scroll_x, main_bullet.scroll_y)
 
             main_bullet.draw(screen,main_bullet_screen_x,main_bullet_screen_y)
             main_bullet.move_front(settings.BULLET_SPEED)
-
-            print("hj")
 
         bullets = [
             b for b in bullets
@@ -115,6 +114,21 @@ def start():
             and 0 <= b.scroll_x <= main_camera.screen_to_scroll(settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT)[0]
             and 0 <= b.scroll_y <= main_camera.screen_to_scroll(settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT)[1]
         ]
+
+        # 特殊弾を進ませて描画する
+        exchange_screen_x, exchange_screen_y = main_camera.scroll_to_screen(exchange_bullet.scroll_x, exchange_bullet.scroll_y)
+        if exchange_bullet.is_in_screen == True:
+            exchange_bullet.draw(screen,exchange_screen_x,exchange_screen_y)
+            exchange_bullet.move_front(settings.EXCHANGE_SPEED)
+        
+        if not (all(not rect.include(exchange_bullet.scroll_x, exchange_bullet.scroll_y) for rect in main_rects) 
+            and (0 <= exchange_bullet.scroll_x <= main_camera.screen_to_scroll(settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT)[0]) 
+            and (0 <= exchange_bullet.scroll_y <= main_camera.screen_to_scroll(settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT)[1])
+            and (exchange_bullet.is_in_screen == True)):
+
+            # main_player.summon(exchange_bullet.scroll_x, exchange_bullet.scroll_y)
+            # main_camera.summon(exchange_bullet.scroll_x, exchange_bullet.scroll_y)
+            exchange_bullet.is_in_screen = False
 
 
         # 主人公描画
@@ -244,7 +258,17 @@ def reset_all():
 
     bullets = []
 
-    return main_camera, main_player, main_rects, main_board, main_goal, main_reticle, bullets
+    exchange_bullet = exchange.Exchange(
+        settings.EXCHANGE_COLOR,
+        settings.EXCHANGE_RADIUS,
+        0,
+        0,
+        0,
+        0,
+        False
+    )
+    
+    return main_camera, main_player, main_rects, main_board, main_goal, main_reticle, bullets, exchange_bullet
 
 def new_bullet(scroll_x, scroll_y, direction_x, direction_y):
     main_bullet = bullet.Bullet(
