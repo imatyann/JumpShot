@@ -1,5 +1,6 @@
 import pygame
 import math
+import random
 
 import game.settings as settings
 import game.camera as camera
@@ -10,6 +11,7 @@ import game.goal as goal
 import game.reticle as reticle
 import game.bullet as bullet
 import game.exchange as exchange
+import game.teresa as teresa
 
 
 def start():
@@ -22,7 +24,7 @@ def start():
     clock = pygame.time.Clock()
 
     # 初期化関数実行
-    main_camera, main_player, main_rects, main_board, main_goal, main_reticle, bullets, exchange_bullet= reset_all()
+    main_camera, main_player, main_rects, main_board, main_goal, main_reticle, bullets, exchange_bullet, teresas = reset_all()
 
 
     # 毎秒実行する関数
@@ -76,10 +78,11 @@ def start():
                 if main_player.on_ground:
                     main_player.jump(10)
                     main_player.on_ground = False
+                    teresas.append(new_teresa(main_camera.scroll_x))
 
         # Rキーでリセット
         if keys[pygame.K_r]:
-            main_camera, main_player, main_rects, main_board, main_goal, main_reticle, bullets, exchange_bullet = reset_all()
+            main_camera, main_player, main_rects, main_board, main_goal, main_reticle, bullets, exchange_bullet, teresas = reset_all()
 
         # 描画関数
 
@@ -120,16 +123,45 @@ def start():
         if exchange_bullet.is_in_screen == True:
             exchange_bullet.draw(screen,exchange_screen_x,exchange_screen_y)
             exchange_bullet.move_front(settings.EXCHANGE_SPEED)
-        
-        if not (all(not rect.include(exchange_bullet.scroll_x, exchange_bullet.scroll_y) for rect in main_rects) 
-            and (0 <= exchange_bullet.scroll_x <= main_camera.screen_to_scroll(settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT)[0]) 
-            and (0 <= exchange_bullet.scroll_y <= main_camera.screen_to_scroll(settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT)[1])
-            and (exchange_bullet.is_in_screen == True)):
+            
+            if not (all(not rect.include(exchange_bullet.scroll_x, exchange_bullet.scroll_y) for rect in main_rects)):
+                # 弾方向に応じて召喚場所を決める
+                if exchange_bullet.direction_x  > 0:
+                    summon_player_x = exchange_bullet.scroll_x - main_player.width
+                    summon_camera_x = exchange_bullet.scroll_x - settings.SCREEN_WIDTH/2
+                else:
+                    summon_player_x = exchange_bullet.scroll_x
+                    summon_camera_x = exchange_bullet.scroll_x - settings.SCREEN_WIDTH/2
+                if exchange_bullet.direction_y > 0:
+                    summon_player_y = exchange_bullet.scroll_y - main_player.height
+                    summon_camera_y = main_camera.scroll_y
+                else:
+                    summon_player_y = exchange_bullet.scroll_y
+                    summon_camera_y = main_camera.scroll_y
+                
+                main_player.summon(summon_player_x, summon_player_y)
+                main_camera.summon(summon_camera_x , summon_camera_y)
+                exchange_bullet.is_in_screen = False
+            if not ((0 <= exchange_bullet.scroll_x <= main_camera.screen_to_scroll(settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT)[0])
+            and (0 <= exchange_bullet.scroll_y <= main_camera.screen_to_scroll(settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT)[1])):
+                exchange_bullet.is_in_screen = False
+            
+        # 敵を進ませて描画する
+        # テレサ
+        for main_teresa in teresas:
+            main_teresa_screen_x, main_teresa_screen_y = main_camera.scroll_to_screen(main_teresa.scroll_x, main_teresa.scroll_y)
 
-            # main_player.summon(exchange_bullet.scroll_x, exchange_bullet.scroll_y)
-            # main_camera.summon(exchange_bullet.scroll_x, exchange_bullet.scroll_y)
-            exchange_bullet.is_in_screen = False
+            main_teresa.draw(screen,main_teresa_screen_x,main_teresa_screen_y)
+            teresa_vx, teresa_vy = player_center_scroll_x - main_teresa.scroll_x, player_center_scroll_y - main_teresa.scroll_y
+            teresa_length = math.hypot(teresa_vx, teresa_vy)    
 
+            main_teresa.direction_x, main_teresa.direction_y =  (teresa_vx/teresa_length, teresa_vy/teresa_length) if teresa_length != 0 else (0, 0)
+            main_teresa.move_front(settings.TERESA_SPEED)
+
+            teresas = [
+                t for t in teresas
+                if all(not t.attacking(b.scroll_x, b.scroll_y) for b in bullets)
+            ]
 
         # 主人公描画
         player_screen_x, player_screen_y = main_camera.scroll_to_screen(main_player.scroll_x, main_player.scroll_y)
@@ -267,8 +299,10 @@ def reset_all():
         0,
         False
     )
+
+    teresas = []
     
-    return main_camera, main_player, main_rects, main_board, main_goal, main_reticle, bullets, exchange_bullet
+    return main_camera, main_player, main_rects, main_board, main_goal, main_reticle, bullets, exchange_bullet, teresas
 
 def new_bullet(scroll_x, scroll_y, direction_x, direction_y):
     main_bullet = bullet.Bullet(
@@ -280,6 +314,18 @@ def new_bullet(scroll_x, scroll_y, direction_x, direction_y):
         direction_y
     )
     return main_bullet
+
+def new_teresa(camera_x):
+    main_teresa = teresa.Teresa(
+            camera_x + settings.SCREEN_WIDTH,
+            settings.SCREEN_HEIGHT * random.random(),
+            settings.TERESA_RADIUS,
+            settings.TERESA_COLOR,
+            0,
+            0
+    )
+    return main_teresa
+
 
 def gameover(screen):
     font = pygame.font.Font(None, 96)
