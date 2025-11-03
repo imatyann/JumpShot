@@ -4,7 +4,7 @@ from . import settings
 # 主人公のクラス
 class Player:
 
-    def __init__(self, scroll_x, scroll_y, on_ground, fall_speed , touch_right, touch_left, touch_head, touch_foot, width, height):
+    def __init__(self, scroll_x, scroll_y, on_ground, fall_speed , touch_right, touch_left, touch_head, touch_foot, width, height, have_key):
         self.scroll_x = scroll_x
         self.scroll_y = scroll_y
         self.on_ground = on_ground
@@ -15,6 +15,7 @@ class Player:
         self.touch_foot = touch_foot
         self.width = width
         self.height = height
+        self.have_key = have_key
     
 
     def draw(self, screen, screen_x, screen_y):
